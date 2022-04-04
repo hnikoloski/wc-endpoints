@@ -1,35 +1,37 @@
 # Endpoints
 
+## Base:
+
 ```
 /wp-json/dp-api/v1/
 ```
 
-Get All Products
+### Get All Products
 
 ```
 /wp-json/dp-api/v1/products
 ```
 
-Get Single Product
+### Get Single Product
 
 ```
 /wp-json/dp-api/v1/product/<id>
 ```
 
-Get All Categories
+### Get All Categories
 
 ```
-/products/categories
+/wp-json/dp-api/v1/products/categories
 ```
 
-Get Single category
+### Get Single category
 
 ```
-/products/category/<id>
+/wp-json/dp-api/v1/products/category/<id>
 ```
 
-Get user Info
+### Get user Info
 
 ```
-/wp-json/dp-api/v1/userinfo/<id>
+/wp-json/dp-api/v1/wp-json/dp-api/v1/userinfo/<id>
 ```
