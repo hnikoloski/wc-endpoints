@@ -175,6 +175,20 @@ function dp_get_product_categories()
 function dp_get_user_info($userId)
 {
     $data = [];
+
+    $customer_orders = get_posts(
+        apply_filters(
+            'woocommerce_my_account_my_orders_query',
+            array(
+                'numberposts' => 99999,
+                'meta_key'    => '_customer_user',
+                'meta_value'  => $userId['id'],
+                'post_type'   => wc_get_order_types('view-orders'),
+                'post_status' => array_keys(wc_get_order_statuses()),
+            )
+        )
+    );
+
     $data['user_id'] = get_userdata($userId['id'])->id;
     $data['user_nicename'] = get_userdata($userId['id'])->user_nicename;
     $data['display_name'] = get_userdata($userId['id'])->display_name;
@@ -191,6 +205,59 @@ function dp_get_user_info($userId)
     $data['user_shipping_zip'] = get_userdata($userId['id'])->shipping_postcode;
     $data['user_shipping_city'] = get_userdata($userId['id'])->shipping_city;
     $data['nonce'] = wp_create_nonce();
+    if ($customer_orders) :
+        $data['orders'] = [];
+        foreach ($customer_orders as $customer_order) {
+            $order = wc_get_order($customer_order);
+            // print_r($order);
+            $data['orders'][] = [
+                'id' => $order->get_id(),
+                'order_number' => $order->get_order_number(),
+                'order_date' => $order->get_date_created()->date('M d, Y'),
+                'order_status' => wc_get_order_status_name($order->get_status()),
+                'order_total' => $order->get_total(),
+                'order_link' => $order->get_view_order_url(),
+                'payment_method_title' => $order->get_payment_method_title(),
+                'billing' => [
+                    'first_name' => $order->get_billing_first_name(),
+                    'last_name' => $order->get_billing_last_name(),
+                    'address_1' => $order->get_billing_address_1(),
+                    'address_2' => $order->get_billing_address_2(),
+                    'city' => $order->get_billing_city(),
+                    'state' => $order->get_billing_state(),
+                    'postcode' => $order->get_billing_postcode(),
+                    'country' => $order->get_billing_country(),
+                    'email' => $order->get_billing_email(),
+                    'phone' => $order->get_billing_phone(),
+                ],
+                'shipping' => [
+                    'first_name' => $order->get_shipping_first_name(),
+                    'last_name' => $order->get_shipping_last_name(),
+                    'address_1' => $order->get_shipping_address_1(),
+                    'address_2' => $order->get_shipping_address_2(),
+                    'city' => $order->get_shipping_city(),
+                    'state' => $order->get_shipping_state(),
+                    'postcode' => $order->get_shipping_postcode(),
+                    'country' => $order->get_shipping_country(),
+                ],
+                'items' => [],
+            ];
+            $items = $order->get_items();
+            foreach ($items as $item_id => $item) {
+                $product = $item->get_product();
+                $data['orders'][count($data['orders']) - 1]['items'][] = [
+                    'id' => $item_id,
+                    'name' => $item->get_name(),
+                    'quantity' => $item->get_quantity(),
+                    'price' => $item->get_total(),
+                    'product_id' => $product->get_id(),
+                    'product_link' => get_permalink($product->get_id()),
+                    'product_image' => get_the_post_thumbnail_url($product->get_id()),
+
+                ];
+            }
+        }
+    endif;
     return $data;
 }
 
