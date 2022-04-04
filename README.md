@@ -33,5 +33,5 @@
 ### Get user Info
 
 ```
-/wp-json/dp-api/v1/wp-json/dp-api/v1/userinfo/<id>
+/wp-json/dp-api/v1/userinfo/<id>
 ```
