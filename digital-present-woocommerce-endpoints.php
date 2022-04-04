@@ -139,7 +139,6 @@ function dp_get_products_in_cat($catId)
     }
     return $data;
 }
-
 // List All Categories
 function dp_get_product_categories()
 {
@@ -191,6 +190,7 @@ function dp_get_user_info($userId)
     $data['user_shipping_address_2'] = get_userdata($userId['id'])->shipping_address_2;
     $data['user_shipping_zip'] = get_userdata($userId['id'])->shipping_postcode;
     $data['user_shipping_city'] = get_userdata($userId['id'])->shipping_city;
+    $data['nonce'] = wp_create_nonce();
     return $data;
 }
 
