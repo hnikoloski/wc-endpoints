@@ -5,13 +5,13 @@
  *
  * @package       DIGIPWC
  * @author        Digital Present
- * @version       1.0.0
+ * @version       1.0.1
  *
  * @wordpress-plugin
  * Plugin Name:   Woocommerce Endpoints
  * Plugin URI:    https://github.com/hnikoloski/wc-endpoints.git
  * Description:   Because Woocommerce markup sucks here are some endpoints
- * Version:       1.0.0
+ * Version:       1.0.1
  * Author:        Digital Present
  * Author URI:    https://digitalpresent.io/
  * Text Domain:   digital-present-woocommerce-endpoints
