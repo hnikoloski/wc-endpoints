@@ -60,11 +60,11 @@ function dp_get_products($request)
     if (class_exists('WooCommerce')) {
         $productsMinPrice = intval($request->get_param('min_price'));
         $productsMaxPrice = intval($request->get_param('max_price'));
-        if ($productsMaxPrice == "") {
-            $productsMaxPrice = 9999999999999999999999999999999;
-        }
         if ($productsMinPrice == "") {
             $productsMinPrice = 0;
+        }
+        if ($productsMaxPrice == "") {
+            $productsMaxPrice = 9999999999;
         }
         $products = wc_get_products(
             array(
@@ -74,6 +74,7 @@ function dp_get_products($request)
             )
         );
         $data = [];
+
         $i = 0;
         foreach ($products as $product) {
             $data[$i]['id'] = $product->get_id();
@@ -95,7 +96,9 @@ function dp_get_products($request)
             $data[$i]['add_to_cart_link'] = '?add-to-cart=' . $product->get_id();
             $i++;
         }
-        return $data;
+        $result = new WP_REST_Response($data, 200);
+        $result->set_headers(array('Cache-Control' => 'public, max-age=3600'));
+        return $result;
     } else {
         return 'This plugin requires WooCommerce to be installed and active. Please install and activate WooCommerce.';
     }
