@@ -35,3 +35,12 @@
 ```
 /wp-json/dp-api/v1/userinfo/<id>
 ```
+
+### Get Single order by id
+
+```
+/wp-json/dp-api/v1/single_order
+params{
+    order_id:integer
+}
+```

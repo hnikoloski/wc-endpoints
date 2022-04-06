@@ -20,8 +20,9 @@
 
 // Exit if accessed directly.
 if (!defined('ABSPATH')) exit;
-
-
+// get woocommerce path
+include_once WP_PLUGIN_DIR . '/woocommerce/woocommerce.php';
+include_once WC_ABSPATH . 'includes/wc-cart-functions.php';
 // List all products
 function dp_get_products()
 {
@@ -56,7 +57,6 @@ function dp_get_products()
         return 'This plugin requires WooCommerce to be installed and active. Please install and activate WooCommerce.';
     }
 }
-
 // Get single product
 function dp_get_single_product($prodId)
 {
@@ -106,7 +106,6 @@ function dp_get_single_product($prodId)
         return 'This plugin requires WooCommerce to be installed and active. Please install and activate WooCommerce.';
     }
 }
-
 // List Products in category
 function dp_get_products_in_cat($catId)
 {
@@ -185,7 +184,6 @@ function dp_get_product_categories()
         return 'This plugin requires WooCommerce to be installed and active. Please install and activate WooCommerce.';
     }
 }
-
 // Get User Info
 function dp_get_user_info($userId)
 {
@@ -281,11 +279,69 @@ function dp_get_user_info($userId)
         return 'This plugin requires WooCommerce to be installed and active. Please install and activate WooCommerce.';
     }
 }
+// dp_get_cart_items
+function dp_get_single_order($request)
+{
+    if (class_exists('WooCommerce')) {
+        // Get an instance of the WC_Order object
+        $orderId = intval($request->get_param('order_id'));
+        $data = [];
+        $order = wc_get_order($orderId);
+        if (!empty($order)) {
+            $data['order_id'] = $order->get_id();
+            $data['order_number'] = $order->get_order_number();
+            $data['order_date'] = $order->get_date_created()->date('M d, Y');
+            $data['order_status'] = wc_get_order_status_name($order->get_status());
+            $data['order_status_nicename'] = preg_replace('/\s+/', '-', strtolower($data['order_status']));
+            $data['order_total'] = $order->get_total();
+            $data['order_billing_address_1'] = $order->get_billing_address_1();
+            $data['order_billing_address_2'] = $order->get_billing_address_2();
+            $data['order_link'] = $order->get_view_order_url();
+            $data['payment_method_title'] = $order->get_payment_method_title();
+            $data['currency'] = $order->get_currency();
+            $data['currency_symbol'] = get_woocommerce_currency_symbol($order->get_currency());
+            $data['billing'] = [
+                'first_name' => $order->get_billing_first_name(),
+                'last_name' => $order->get_billing_last_name(),
+                'address_1' => $order->get_billing_address_1(),
+                'address_2' => $order->get_billing_address_2(),
+                'city' => $order->get_billing_city(),
+                'state' => $order->get_billing_state(),
+                'postcode' => $order->get_billing_postcode(),
+                'country' => WC()->countries->countries[$order->get_billing_country()],
+                'email' => $order->get_billing_email(),
+                'phone' => $order->get_billing_phone(),
+            ];
+            $items = $order->get_items();
+            $data['items'] = [];
+            foreach ($items as $item_id => $item) {
+                $product = $item->get_product();
+                $data['items'][] = [
+                    'id' => $item_id,
+                    'name' => $item->get_name(),
+                    'quantity' => $item->get_quantity(),
+                    'price' => $item->get_total(),
+                    'product_weight' => $product->get_weight(),
+                    'product_id' => $product->get_id(),
+                    'product_link' => get_permalink($product->get_id()),
+                    'product_image' => get_the_post_thumbnail_url($product->get_id()),
+                    'currency' => $order->get_currency(),
+                    'currency_symbol' => get_woocommerce_currency_symbol($order->get_currency()),
+                ];
+            }
+        } else {
+            $data['error'] = 'Order not found';
+        }
+        return rest_ensure_response($data);
+    } else {
+        return 'This plugin requires WooCommerce to be installed and active. Please install and activate WooCommerce.';
+    }
+}
+
 
 
 
 add_action('rest_api_init', function () {
-
     register_rest_route('dp-api/v1', 'products', array(
         'methods' => 'GET',
         'callback' => 'dp_get_products'
@@ -303,14 +359,14 @@ add_action('rest_api_init', function () {
         'methods' => 'GET',
         'callback' => 'dp_get_single_product'
     ));
-
     register_rest_route('dp-api/v1', 'userinfo/(?P<id>[a-zA-Z0-9-]+)', array(
         'methods' => 'GET',
         'callback' => 'dp_get_user_info'
     ));
+    register_rest_route('dp-api/v1', 'single_order', array(
+        'methods' => 'GET',
+        'callback' => 'dp_get_single_order',
+        'permission_callback' => '__return_true'
 
-    // register_rest_route('dp-api/v1', 'userinfo/(?P<id>[a-zA-Z0-9-]+)', array(
-    //     'methods' => 'POST',
-    //     'callback' => 'dp_update_user_info'
-    // ));
+    ));
 });
