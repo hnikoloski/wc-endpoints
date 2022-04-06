@@ -483,8 +483,8 @@ function dp_update_user_password($request)
 {
     if (class_exists('WooCommerce')) {
         $user_id = $request->get_param('user_id');
-        $old_password = $request->get_param('old_password');
-        $new_password = $request->get_param('new_password');
+        $old_password = base64_decode($request->get_param('old_password'));
+        $new_password = base64_decode($request->get_param('new_password'));
         $result = [];
         if (wp_check_password($old_password, get_user_by('id', $user_id)->user_pass, $user_id)) {
             wp_set_password($new_password, $user_id);

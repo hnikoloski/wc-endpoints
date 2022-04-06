@@ -61,8 +61,8 @@
     method:POST,
     params:{
         user_id:integer,
-        old_password:string,
-        new_password:string
+        old_password:string(base64),
+        new_password:string(base64)
     }
 }
 ```
