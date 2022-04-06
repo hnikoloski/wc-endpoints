@@ -498,6 +498,61 @@ function dp_update_user_password($request)
     }
 }
 
+// Edit user billing address
+function dp_edit_user_billing_address($request)
+{
+    if (class_exists('WooCommerce')) {
+        $user_id = $request->get_param('user_id');
+        $billing_first_name = $request->get_param('billing_first_name');
+        $billing_last_name = $request->get_param('billing_last_name');
+        $billing_address_1 = $request->get_param('billing_address_1');
+        $billing_address_2 = $request->get_param('billing_address_2');
+        $result = [];
+        $user = get_user_by('id', $user_id);
+
+        if (!empty($user)) {
+            // Set billing address 1
+            update_user_meta($user_id, 'billing_first_name', strval($billing_first_name));
+            update_user_meta($user_id, 'billing_last_name', strval($billing_last_name));
+            update_user_meta($user_id, 'billing_address_1', strval($billing_address_1));
+            update_user_meta($user_id, 'billing_address_2', strval($billing_address_2));
+
+            $result = new WP_REST_Response(['success' => 'Billing address updated successfully'], 200);
+        } else {
+            $result = new WP_REST_Response(['error' => 'User not found'], 404);
+        }
+
+        return rest_ensure_response($result);
+    } else {
+        return 'This plugin requires WooCommerce to be installed and active. Please install and activate WooCommerce.';
+    }
+}
+
+// Edit user shipping address
+function dp_edit_user_shipping_address($request)
+{
+    if (class_exists('WooCommerce')) {
+        $user_id = $request->get_param('user_id');
+        $shipping_address_1 = $request->get_param('shipping_address_1');
+        $shipping_address_2 = $request->get_param('shipping_address_2');
+        $result = [];
+        $user = get_user_by('id', $user_id);
+
+        if (!empty($user)) {
+            // Set shipping address 1
+            update_user_meta($user_id, 'shipping_address_1', strval($shipping_address_1));
+            update_user_meta($user_id, 'shipping_address_2', strval($shipping_address_2));
+
+            $result = new WP_REST_Response(['success' => 'Shipping address updated successfully'], 200);
+        } else {
+            $result = new WP_REST_Response(['error' => 'User not found'], 404);
+        }
+
+        return rest_ensure_response($result);
+    } else {
+        return 'This plugin requires WooCommerce to be installed and active. Please install and activate WooCommerce.';
+    }
+}
 
 
 add_action('rest_api_init', function () {
@@ -513,52 +568,74 @@ add_action('rest_api_init', function () {
         'callback' => 'dp_get_product_categories',
         'permission_callback' => '__return_true'
     ));
+
     // get products in category
     register_rest_route('dp-api/v1', 'products/category/(?P<id>[a-zA-Z0-9-]+)', array(
         'methods' => 'GET',
         'callback' => 'dp_get_products_in_cat',
         'permission_callback' => '__return_true'
     ));
+
     // Get single Product
     register_rest_route('dp-api/v1', 'product/(?P<id>[a-zA-Z0-9-]+)', array(
         'methods' => 'GET',
         'callback' => 'dp_get_single_product',
         'permission_callback' => '__return_true'
     ));
+
     // Get user info
     register_rest_route('dp-api/v1', 'userinfo/(?P<id>[a-zA-Z0-9-]+)', array(
         'methods' => 'GET',
         'callback' => 'dp_get_user_info',
         'permission_callback' => '__return_true'
     ));
+
     // Get single order
     register_rest_route('dp-api/v1', 'single_order', array(
         'methods' => 'GET',
         'callback' => 'dp_get_single_order',
         'permission_callback' => '__return_true'
     ));
+
     // Get cart
     register_rest_route('dp-api/v1', 'cart', array(
         'methods' => 'GET',
         'callback' => 'dp_get_cart',
         'permission_callback' => '__return_true'
     ));
+
     // Add To cart
     register_rest_route('dp-api/v1', 'add_to_cart', array(
         'methods' => 'POST',
         'callback' => 'dp_add_to_cart',
         'permission_callback' => '__return_true'
     ));
+
     // Remove from cart
     register_rest_route('dp-api/v1', 'remove_from_cart', array(
         'methods' => 'POST',
         'callback' => 'dp_remove_from_cart',
         'permission_callback' => '__return_true'
     ));
-    // Create a wordpress rest route for password update
+
+    // Password update
     register_rest_route('dp-api/v1', 'update_password', array(
         'methods' => 'POST',
         'callback' => 'dp_update_user_password',
+        'permission_callback' => '__return_true'
+    ));
+
+    // Edit user billing address
+    register_rest_route('dp-api/v1', 'edit_user_billing_address', array(
+        'methods' => 'POST',
+        'callback' => 'dp_edit_user_billing_address',
+        'permission_callback' => '__return_true'
+    ));
+
+    // Edit user shipping address
+    register_rest_route('dp-api/v1', 'edit_user_shipping_address', array(
+        'methods' => 'POST',
+        'callback' => 'dp_edit_user_shipping_address',
         'permission_callback' => '__return_true'
     ));
 });
