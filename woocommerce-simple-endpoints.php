@@ -21,8 +21,25 @@
 // Exit if accessed directly.
 if (!defined('ABSPATH')) exit;
 // get woocommerce path
-include_once WP_PLUGIN_DIR . '/woocommerce/woocommerce.php';
-include_once WC_ABSPATH . 'includes/wc-cart-functions.php';
+
+add_action('woocommerce_init', 'ihavenoideawhatisthis');
+
+function ihavenoideawhatisthis()
+{
+    if (!WC()->is_rest_api_request()) {
+        return;
+    }
+
+    WC()->frontend_includes();
+
+    if (null === WC()->cart && function_exists('wc_load_cart')) {
+        wc_load_cart();
+    }
+
+    /**
+     * My custom logic.
+     */
+}
 
 add_filter('woocommerce_product_data_store_cpt_get_products_query', 'handle_price_range_query_var', 10, 2);
 function handle_price_range_query_var($query, $query_vars)
@@ -110,43 +127,47 @@ function dp_get_single_product($prodId)
 
         $data = [];
         $product = wc_get_product($prodId['id']);
-        $data['id'] = $product->get_id();
-        $data['type'] = $product->get_type();
-        $data['name'] = $product->get_name();
-        $data['description'] = $product->get_description();
-        $data['short_description'] = $product->get_short_description();
-        $data['slug'] = $product->get_slug();
-        $data['permalink'] = $product->get_permalink();
-        $data['sku'] = $product->get_sku();
-        $data['price'] = $product->get_price();
-        $data['regular_price'] = $product->get_regular_price();
-        $data['sale_price'] = $product->get_sale_price();
-        $data['date_created'] = $product->get_date_created();
-        $data['date_modified'] = $product->get_date_modified();
-        $data['date_on_sale_from'] = $product->get_date_on_sale_from();
-        $data['date_on_sale_to'] = $product->get_date_on_sale_to();
-        $data['stock_quantity'] = $product->get_stock_quantity();
-        $data['stock_status'] = $product->get_stock_status();
-        $data['category_id'] = $product->get_category_ids();
-        $data['add_to_cart_link'] = '?add-to-cart=' . $product->get_id();
-        $data['product_img_url'] = wp_get_attachment_url($product->get_image_id());
-        $data['product_img_alt'] = get_post_meta($product->get_image_id(), '_wp_attachment_image_alt', true);
-        $data['product_gallery_ids'] = $product->get_gallery_image_ids();
-        $data['product_gallery_urls'] = [];
-        foreach ($data['product_gallery_ids'] as $id) {
-            $data['product_gallery_urls'][] = wp_get_attachment_url($id);
-        }
-        // Get acf repeater field
-        $data['extra_info'] = [];
-        if (have_rows('extra_info', $prodId['id'])) :
-            while (have_rows('extra_info', $prodId['id'])) : the_row();
-                $data['extra_info'][] = [
-                    'title' => get_sub_field('title', $prodId['id']),
-                    'content' => get_sub_field('content', $prodId['id'])
-                ];
-            endwhile;
-        endif;
+        if (!empty($product)) {
 
+            $data['id'] = $product->get_id();
+            $data['type'] = $product->get_type();
+            $data['name'] = $product->get_name();
+            $data['description'] = $product->get_description();
+            $data['short_description'] = $product->get_short_description();
+            $data['slug'] = $product->get_slug();
+            $data['permalink'] = $product->get_permalink();
+            $data['sku'] = $product->get_sku();
+            $data['price'] = $product->get_price();
+            $data['regular_price'] = $product->get_regular_price();
+            $data['sale_price'] = $product->get_sale_price();
+            $data['date_created'] = $product->get_date_created();
+            $data['date_modified'] = $product->get_date_modified();
+            $data['date_on_sale_from'] = $product->get_date_on_sale_from();
+            $data['date_on_sale_to'] = $product->get_date_on_sale_to();
+            $data['stock_quantity'] = $product->get_stock_quantity();
+            $data['stock_status'] = $product->get_stock_status();
+            $data['category_id'] = $product->get_category_ids();
+            $data['add_to_cart_link'] = '?add-to-cart=' . $product->get_id();
+            $data['product_img_url'] = wp_get_attachment_url($product->get_image_id());
+            $data['product_img_alt'] = get_post_meta($product->get_image_id(), '_wp_attachment_image_alt', true);
+            $data['product_gallery_ids'] = $product->get_gallery_image_ids();
+            $data['product_gallery_urls'] = [];
+            foreach ($data['product_gallery_ids'] as $id) {
+                $data['product_gallery_urls'][] = wp_get_attachment_url($id);
+            }
+            // Get acf repeater field
+            $data['extra_info'] = [];
+            if (have_rows('extra_info', $prodId['id'])) :
+                while (have_rows('extra_info', $prodId['id'])) : the_row();
+                    $data['extra_info'][] = [
+                        'title' => get_sub_field('title', $prodId['id']),
+                        'content' => get_sub_field('content', $prodId['id'])
+                    ];
+                endwhile;
+            endif;
+        } else {
+            $data['error'] = 'Product not found';
+        }
         return $data;
     } else {
         return 'This plugin requires WooCommerce to be installed and active. Please install and activate WooCommerce.';
@@ -330,7 +351,7 @@ function dp_get_user_info($userId)
         return 'This plugin requires WooCommerce to be installed and active. Please install and activate WooCommerce.';
     }
 }
-// dp_get_cart_items
+// get single order
 function dp_get_single_order($request)
 {
     if (class_exists('WooCommerce')) {
@@ -390,8 +411,57 @@ function dp_get_single_order($request)
         return 'This plugin requires WooCommerce to be installed and active. Please install and activate WooCommerce.';
     }
 }
+// dp_add_to_cart
+function dp_add_to_cart($request)
+{
+    if (class_exists('WooCommerce')) {
+        $productId = intval($request->get_param('product_id'));
+        $quantity = intval($request->get_param('quantity'));
 
+        $result = [];
+        $product = wc_get_product($productId);
+        if (!empty($product)) {
 
+            $result = WC()->cart->add_to_cart($productId, $quantity);
+        } else {
+            $result = ['error' => 'Product not found'];
+        }
+        return rest_ensure_response($result);
+    } else {
+        return 'This plugin requires WooCommerce to be installed and active. Please install and activate WooCommerce.';
+    }
+}
+// Get cart from wc session/cookie
+function dp_get_cart()
+{
+    if (class_exists('WooCommerce')) {
+        $data = [];
+        $cart = WC()->cart->get_cart();
+        foreach ($cart as $cart_item_key => $cart_item) {
+            $product = $cart_item['data'];
+            $data[] = [
+                'cart_item_key' => $cart_item_key,
+                'name' => $product->get_name(),
+                'quantity' => $cart_item['quantity'],
+                'price' => $product->get_price(),
+                'product_weight' => $product->get_weight(),
+                'product_id' => $product->get_id(),
+                'product_link' => get_permalink($product->get_id()),
+                'product_image' => get_the_post_thumbnail_url($product->get_id()),
+                'currency' => get_woocommerce_currency_symbol(),
+                'currency_symbol' => get_woocommerce_currency_symbol(),
+            ];
+        }
+        if (!empty($data)) {
+            $result = new WP_REST_Response($data, 200);
+        } else {
+            $result = new WP_REST_Response(['error' => 'Cart is empty'], 404);
+        }
+        return rest_ensure_response($result);
+    } else {
+        return 'This plugin requires WooCommerce to be installed and active. Please install and activate WooCommerce.';
+    }
+}
 
 
 add_action('rest_api_init', function () {
@@ -404,27 +474,43 @@ add_action('rest_api_init', function () {
     //Get all categories
     register_rest_route('dp-api/v1', 'categories', array(
         'methods' => 'GET',
-        'callback' => 'dp_get_product_categories'
+        'callback' => 'dp_get_product_categories',
+        'permission_callback' => '__return_true'
     ));
     // get products in category
     register_rest_route('dp-api/v1', 'products/category/(?P<id>[a-zA-Z0-9-]+)', array(
         'methods' => 'GET',
-        'callback' => 'dp_get_products_in_cat'
+        'callback' => 'dp_get_products_in_cat',
+        'permission_callback' => '__return_true'
     ));
     // Get single Product
     register_rest_route('dp-api/v1', 'product/(?P<id>[a-zA-Z0-9-]+)', array(
         'methods' => 'GET',
-        'callback' => 'dp_get_single_product'
+        'callback' => 'dp_get_single_product',
+        'permission_callback' => '__return_true'
     ));
     // Get user info
     register_rest_route('dp-api/v1', 'userinfo/(?P<id>[a-zA-Z0-9-]+)', array(
         'methods' => 'GET',
-        'callback' => 'dp_get_user_info'
+        'callback' => 'dp_get_user_info',
+        'permission_callback' => '__return_true'
     ));
     // Get single order
     register_rest_route('dp-api/v1', 'single_order', array(
         'methods' => 'GET',
         'callback' => 'dp_get_single_order',
+        'permission_callback' => '__return_true'
+    ));
+    // Add To cart
+    register_rest_route('dp-api/v1', 'add_to_cart', array(
+        'methods' => 'POST',
+        'callback' => 'dp_add_to_cart',
+        'permission_callback' => '__return_true'
+    ));
+    // Get cart
+    register_rest_route('dp-api/v1', 'cart', array(
+        'methods' => 'GET',
+        'callback' => 'dp_get_cart',
         'permission_callback' => '__return_true'
     ));
 });

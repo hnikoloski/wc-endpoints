@@ -44,3 +44,9 @@ params{
     order_id:integer
 }
 ```
+
+### Get cart
+
+```
+/wp-json/dp-api/v1/cart
+```
