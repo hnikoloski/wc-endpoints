@@ -478,6 +478,26 @@ function dp_get_cart()
         return 'This plugin requires WooCommerce to be installed and active. Please install and activate WooCommerce.';
     }
 }
+// Check if current password is same as old password
+function dp_update_user_password($request)
+{
+    if (class_exists('WooCommerce')) {
+        $user_id = $request->get_param('user_id');
+        $old_password = $request->get_param('old_password');
+        $new_password = $request->get_param('new_password');
+        $result = [];
+        if (wp_check_password($old_password, get_user_by('id', $user_id)->user_pass, $user_id)) {
+            wp_set_password($new_password, $user_id);
+            $result = new WP_REST_Response(['success' => 'Password updated successfully'], 200);
+        } else {
+            $result = new WP_REST_Response(['error' => 'Old password is incorrect'], 401);
+        }
+        return rest_ensure_response($result);
+    } else {
+        return 'This plugin requires WooCommerce to be installed and active. Please install and activate WooCommerce.';
+    }
+}
+
 
 
 add_action('rest_api_init', function () {
@@ -533,6 +553,12 @@ add_action('rest_api_init', function () {
     register_rest_route('dp-api/v1', 'remove_from_cart', array(
         'methods' => 'POST',
         'callback' => 'dp_remove_from_cart',
+        'permission_callback' => '__return_true'
+    ));
+    // Create a wordpress rest route for password update
+    register_rest_route('dp-api/v1', 'update_password', array(
+        'methods' => 'POST',
+        'callback' => 'dp_update_user_password',
         'permission_callback' => '__return_true'
     ));
 });

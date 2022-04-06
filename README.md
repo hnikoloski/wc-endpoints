@@ -54,6 +54,19 @@
 }
 ```
 
+### Update User Password
+
+```
+{
+    method:POST,
+    params:{
+        user_id:integer,
+        old_password:string,
+        new_password:string
+    }
+}
+```
+
 ### Get Single order by id
 
 ```
