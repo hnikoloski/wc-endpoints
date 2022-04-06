@@ -50,3 +50,28 @@ params{
 ```
 /wp-json/dp-api/v1/cart
 ```
+
+### Add to cart
+
+```
+/wp-json/dp-api/v1/add_to_cart
+{
+    params:
+    {
+        product_id: integer,
+        quantity: integer,
+    }
+}
+```
+
+### Remove from cart
+
+```
+/wp-json/dp-api/v1/remove_from_cart
+{
+    params:
+    {
+        cart_item_key: string,
+    }
+}
+```

@@ -411,7 +411,7 @@ function dp_get_single_order($request)
         return 'This plugin requires WooCommerce to be installed and active. Please install and activate WooCommerce.';
     }
 }
-// dp_add_to_cart
+// Add to cart
 function dp_add_to_cart($request)
 {
     if (class_exists('WooCommerce')) {
@@ -423,6 +423,7 @@ function dp_add_to_cart($request)
         if (!empty($product)) {
 
             $result = WC()->cart->add_to_cart($productId, $quantity);
+            $result = ['message' => 'Product with the id:' . $productId . ' added to cart'];
         } else {
             $result = ['error' => 'Product not found'];
         }
@@ -431,6 +432,20 @@ function dp_add_to_cart($request)
         return 'This plugin requires WooCommerce to be installed and active. Please install and activate WooCommerce.';
     }
 }
+// dp_remove_from_cart
+function dp_remove_from_cart($request)
+{
+    // remove item from cart
+    if (class_exists('WooCommerce')) {
+        //    Find the users cart and remove the item
+        $cart_item_key = $request->get_param('cart_item_key');
+        $result['item_removed'] = WC()->cart->remove_cart_item($cart_item_key);
+        return rest_ensure_response($result);
+    } else {
+        return 'This plugin requires WooCommerce to be installed and active. Please install and activate WooCommerce.';
+    }
+}
+
 // Get cart from wc session/cookie
 function dp_get_cart()
 {
@@ -441,6 +456,7 @@ function dp_get_cart()
             $product = $cart_item['data'];
             $data[] = [
                 'cart_item_key' => $cart_item_key,
+                'product_id' => $product->get_id(),
                 'name' => $product->get_name(),
                 'quantity' => $cart_item['quantity'],
                 'price' => $product->get_price(),
@@ -501,16 +517,22 @@ add_action('rest_api_init', function () {
         'callback' => 'dp_get_single_order',
         'permission_callback' => '__return_true'
     ));
+    // Get cart
+    register_rest_route('dp-api/v1', 'cart', array(
+        'methods' => 'GET',
+        'callback' => 'dp_get_cart',
+        'permission_callback' => '__return_true'
+    ));
     // Add To cart
     register_rest_route('dp-api/v1', 'add_to_cart', array(
         'methods' => 'POST',
         'callback' => 'dp_add_to_cart',
         'permission_callback' => '__return_true'
     ));
-    // Get cart
-    register_rest_route('dp-api/v1', 'cart', array(
-        'methods' => 'GET',
-        'callback' => 'dp_get_cart',
+    // Remove from cart
+    register_rest_route('dp-api/v1', 'remove_from_cart', array(
+        'methods' => 'POST',
+        'callback' => 'dp_remove_from_cart',
         'permission_callback' => '__return_true'
     ));
 });
