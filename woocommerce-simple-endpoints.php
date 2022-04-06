@@ -395,27 +395,33 @@ function dp_get_single_order($request)
 
 
 add_action('rest_api_init', function () {
+    // Get all products + min/max price params
     register_rest_route('dp-api/v1', 'products', array(
         'methods' => 'GET',
         'callback' => 'dp_get_products',
         'permission_callback' => '__return_true'
     ));
+    //Get all categories
     register_rest_route('dp-api/v1', 'categories', array(
         'methods' => 'GET',
         'callback' => 'dp_get_product_categories'
     ));
+    // get products in category
     register_rest_route('dp-api/v1', 'products/category/(?P<id>[a-zA-Z0-9-]+)', array(
         'methods' => 'GET',
         'callback' => 'dp_get_products_in_cat'
     ));
+    // Get single Product
     register_rest_route('dp-api/v1', 'product/(?P<id>[a-zA-Z0-9-]+)', array(
         'methods' => 'GET',
         'callback' => 'dp_get_single_product'
     ));
+    // Get user info
     register_rest_route('dp-api/v1', 'userinfo/(?P<id>[a-zA-Z0-9-]+)', array(
         'methods' => 'GET',
         'callback' => 'dp_get_user_info'
     ));
+    // Get single order
     register_rest_route('dp-api/v1', 'single_order', array(
         'methods' => 'GET',
         'callback' => 'dp_get_single_order',
