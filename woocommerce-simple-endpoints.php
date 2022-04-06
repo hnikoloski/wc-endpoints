@@ -23,15 +23,58 @@ if (!defined('ABSPATH')) exit;
 // get woocommerce path
 include_once WP_PLUGIN_DIR . '/woocommerce/woocommerce.php';
 include_once WC_ABSPATH . 'includes/wc-cart-functions.php';
+
+add_filter('woocommerce_product_data_store_cpt_get_products_query', 'handle_price_range_query_var', 10, 2);
+function handle_price_range_query_var($query, $query_vars)
+{
+    if (!empty($query_vars['price_range'])) {
+        $price_range = explode('|', esc_attr($query_vars['price_range']));
+
+        if (is_array($price_range) && count($price_range) == 2) {
+            $query['meta_query']['relation'] = 'AND';
+
+            $query['meta_query'][] = array(
+                'key'     => '_price',
+                'value'   => reset($price_range), // From price value
+                'compare' => '>=',
+                'type'    => 'NUMERIC'
+            );
+
+            $query['meta_query'][] = array(
+                'key'     => '_price',
+                'value'   => end($price_range), // To price value
+                'compare' => '<=',
+                'type'    => 'NUMERIC'
+            );
+
+            $query['orderby'] = 'meta_value_num'; // sort by price
+            $query['order'] = 'ASC'; // In ascending order
+        }
+    }
+    return $query;
+}
+
 // List all products
-function dp_get_products()
+function dp_get_products($request)
 {
     if (class_exists('WooCommerce')) {
-        $products = wc_get_products(array('status' => 'publish', 'limit' => -1));
+        $productsMinPrice = intval($request->get_param('min_price'));
+        $productsMaxPrice = intval($request->get_param('max_price'));
+        if ($productsMaxPrice == "") {
+            $productsMaxPrice = 9999999999999999999999999999999;
+        }
+        if ($productsMinPrice == "") {
+            $productsMinPrice = 0;
+        }
+        $products = wc_get_products(
+            array(
+                'status' => 'publish',
+                'limit' => -1,
+                'price_range' => $productsMinPrice . '|' . $productsMaxPrice,
+            )
+        );
         $data = [];
-
         $i = 0;
-
         foreach ($products as $product) {
             $data[$i]['id'] = $product->get_id();
             $data[$i]['type'] = $product->get_type();
@@ -344,9 +387,9 @@ function dp_get_single_order($request)
 add_action('rest_api_init', function () {
     register_rest_route('dp-api/v1', 'products', array(
         'methods' => 'GET',
-        'callback' => 'dp_get_products'
+        'callback' => 'dp_get_products',
+        'permission_callback' => '__return_true'
     ));
-
     register_rest_route('dp-api/v1', 'categories', array(
         'methods' => 'GET',
         'callback' => 'dp_get_product_categories'
@@ -367,6 +410,5 @@ add_action('rest_api_init', function () {
         'methods' => 'GET',
         'callback' => 'dp_get_single_order',
         'permission_callback' => '__return_true'
-
     ));
 });
